@@ -64,3 +64,9 @@ def test_benchmark_flags():
     assert bool(b.loc[(2019, "poverty"), "within_tol"])
     assert not bool(b.loc[(2024, "poverty"), "within_tol"])
     assert b.loc[(2019, "poverty"), "diff"] == pytest.approx(-0.01)
+
+
+def test_labour_reports_excluded():
+    person = pd.DataFrame({"year": 2019, "age": [20, 30, 40], "employment_weight": [1.0, np.nan, 1.0],
+                           "employed": [True, True, pd.NA], "informal": pd.NA, "area": "urban"})
+    assert indicators.labour(person).iloc[0]["n_excluded"] == 2

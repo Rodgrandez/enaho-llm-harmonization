@@ -43,7 +43,8 @@ def labour(person: pd.DataFrame, by: str | None = None) -> pd.DataFrame:
     df = person.copy()
     w = pd.to_numeric(df["employment_weight"], errors="coerce")
     age = pd.to_numeric(df["age"], errors="coerce")
-    df["pet"] = (age >= WORKING_AGE) & w.notna() & (w > 0) & df["employed"].notna()
+    df["age_ok"] = age >= WORKING_AGE
+    df["pet"] = df["age_ok"] & w.notna() & (w > 0) & df["employed"].notna()
     df["w"] = w.where(df["pet"])
     df["emp_d"] = df["employed"].astype("Float64").astype(float)
     df["inf_d"] = df["informal"].astype("Float64").astype(float) if "informal" in df else float("nan")
@@ -54,7 +55,8 @@ def labour(person: pd.DataFrame, by: str | None = None) -> pd.DataFrame:
                100 * SUM(w * inf_d) FILTER (WHERE pet AND emp_d = 1 AND inf_d IS NOT NULL AND NOT isnan(inf_d))
                    / SUM(w) FILTER (WHERE pet AND emp_d = 1 AND inf_d IS NOT NULL AND NOT isnan(inf_d))
                    AS informality_rate,
-               COUNT(*) FILTER (WHERE pet) AS n_working_age
+               COUNT(*) FILTER (WHERE pet) AS n_working_age,
+               COUNT(*) FILTER (WHERE age_ok AND NOT pet) AS n_excluded
         FROM df GROUP BY {g} ORDER BY {g}
     """
     out = duckdb.query_df(df, "df", q).df()

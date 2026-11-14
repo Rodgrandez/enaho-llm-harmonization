@@ -84,3 +84,38 @@ def test_every_derived_target_has_a_function():
 
     derived = {t.name for t in schema.load(config.SCHEMA) if t.kind == "derived"}
     assert derived == set(harmonize.DERIVE)
+
+
+# --- final review fixes -------------------------------------------------------------------------
+ALLOWED = {"sex", "age", "none"}
+
+
+def test_decisions_are_normalised():
+    f = harmonize.final_mapping(_mapped(["p207", "p208a"], ["sex", "age"]),
+                                _reviewed(["p207", "p208a"], [" Reject ", "ACCEPT"], ["", ""]), allowed=ALLOWED)
+    assert list(f["name"]) == ["p208a"] and f.iloc[0]["provenance"] == "human_accepted"
+
+
+def test_unknown_decision_raises():
+    import pytest
+
+    with pytest.raises(ValueError, match="rechazar"):
+        harmonize.final_mapping(_mapped(["p207"], ["sex"]), _reviewed(["p207"], ["rechazar"], [""]), allowed=ALLOWED)
+
+
+def test_correct_without_valid_target_raises():
+    import pytest
+
+    with pytest.raises(ValueError, match="corrected_target"):
+        harmonize.final_mapping(_mapped(["p207"], ["age"]), _reviewed(["p207"], ["correct"], [""]), allowed=ALLOWED)
+    with pytest.raises(ValueError, match="sexx"):
+        harmonize.final_mapping(_mapped(["p207"], ["age"]), _reviewed(["p207"], ["correct"], ["sexx"]), allowed=ALLOWED)
+
+
+def test_required_targets_missing_raises():
+    import pytest
+
+    final = pd.DataFrame({"year": 2024, "module": "34", "name": ["factor07"], "target": ["household_weight"],
+                          "provenance": "llm"})
+    with pytest.raises(ValueError, match="household_size"):
+        harmonize.check_required(final, years=[2024])

@@ -1,7 +1,7 @@
 # Target schema for harmonizing ENAHO 2019 and 2024.
 # direct  = the LLM maps source variables to it; source_names is the hand-written ground truth.
 # derived = computed in src/enahoharm/harmonize.py from direct targets (never asked to the LLM).
-# Drafted by an AI assistant from the INEI dictionaries; reviewed by Rodrigo Grandez (see validation/).
+# Drafted by an AI assistant from the INEI dictionaries; human review status is recorded in validation/.
 
 targets:
   # --- Identifiers and survey design ---------------------------------------------------------

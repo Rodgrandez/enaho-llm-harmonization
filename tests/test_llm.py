@@ -124,3 +124,20 @@ def test_key_not_leaked(tmp_path, monkeypatch, caplog):
     for f in tmp_path.rglob("*"):
         if f.is_file():
             assert "SECRET" not in f.read_text(encoding="utf-8")
+
+
+def test_truncated_answer_not_cached(tmp_path):
+    r = _response(GOOD)
+    r.stop_reason = "max_tokens"
+    with pytest.raises(llm.LLMError, match="max_tokens"):
+        llm.map_variables(_dictionary(), TARGETS, tmp_path, client=FakeClient([r]))
+    assert not list(tmp_path.glob("*.json"))
+
+
+def test_parse_survives_odd_types(tmp_path):
+    odd = {"mappings": [
+        {"name": ["p207"], "target": "sex", "confidence": 0.9, "justification": ""},
+        {"name": "p208a", "target": ["age"], "confidence": True, "justification": ""},
+    ]}
+    out = llm.map_variables(_dictionary(), TARGETS, tmp_path, client=FakeClient([_response(odd)]))
+    assert (out["status"] == "invalid").all()

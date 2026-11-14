@@ -4,7 +4,7 @@ A reproducible pipeline that harmonizes two years (2019 and 2024) of **ENAHO**, 
 survey (INEI). Its steps:
 
 1. **An LLM proposes the mapping.** It maps every source variable to a common target schema.
-2. **The mapping is evaluated** against a hand-checked ground truth.
+2. **The mapping is evaluated** against a ground truth reviewed by a person (status in Results).
 3. **Doubtful cases go to a person.** They are routed to a human review queue.
 4. **Indicators are computed with sampling weights.** These are poverty, extreme poverty, employment and
    informality, nationally and by urban/rural area.
@@ -55,7 +55,7 @@ constrained to a JSON schema whose target field is an enum of the schema names p
 - **Automatic:** the INEI source names of each target (`source_names` in the schema).
 - **Manual:** rows in `validation/ground_truth.csv`. They cover every schema variable whose label changed
   between years, or that exists in only one year, plus a random audit sample of 30 automatic rows. These
-  rows were drafted by the AI assistant and reviewed and signed off by me (`reviewed_by`).
+  rows were drafted by the AI assistant; each counts as signed off only when I fill `reviewed_by`, and the Results block reports how many are signed.
 
 **Metrics.**
 
@@ -84,7 +84,7 @@ proposal overridden by those decisions, with provenance recorded per variable: `
 ```bash
 conda env create -f environment.yml
 conda activate enaho-harm
-make all      # downloads ENAHO (~600 MB), runs every stage from the committed LLM cache: no API key needed
+make all      # downloads ENAHO (~600 MB), runs every stage from the committed LLM cache (no API key needed once data/llm_cache/ is populated)
 make test lint
 ```
 
@@ -113,7 +113,7 @@ Official figures for the benchmark: INEI, *Evolución de la Pobreza Monetaria*, 
 2019) and 2025 (for 2024).
 
 The code was written with the help of an AI coding assistant. The design decisions, the review of the ground
-truth and the human-validation decisions are mine.
+truth and the human-validation decisions are mine (see `reviewed_by` and `decision` in validation/).
 
 ## License
 

@@ -50,9 +50,29 @@ def queue(mapped: pd.DataFrame, truth: pd.DataFrame, dictionary: pd.DataFrame, t
 
 
 def keep_decisions(new: pd.DataFrame, old: pd.DataFrame) -> pd.DataFrame:
-    """Carry human decisions from a previous queue into a regenerated one (matched on year, module, name)."""
-    o = _norm(old)[KEYS + ["decision", "corrected_target"]].fillna("")
+    """Carry human work from a previous queue into a regenerated one (matched on year, module, name).
+
+    - A decision whose LLM proposal changed since it was made is cleared and flagged in `note`.
+    - Decided rows that no longer qualify for the queue are kept, so a decision is never lost.
+    - Extra reviewer columns (e.g. `note`) are preserved.
+    """
+    o = _norm(old).fillna("")
+    for col in ("decision", "corrected_target", "proposed"):
+        o[col] = o[col].astype(str) if col in o else ""
+    extra = [c for c in o.columns if c not in COLUMNS]
+    if "note" not in extra:
+        o["note"] = ""
+        extra.append("note")
     n = _norm(new).drop(columns=["decision", "corrected_target"])
-    merged = n.merge(o, on=KEYS, how="left")
-    merged[["decision", "corrected_target"]] = merged[["decision", "corrected_target"]].fillna("")
-    return merged[COLUMNS]
+    keep = o[KEYS + ["decision", "corrected_target", "proposed"] + extra].rename(columns={"proposed": "_old_prop"})
+    merged = n.merge(keep, on=KEYS, how="left")
+    merged[["decision", "corrected_target", "note"]] = merged[["decision", "corrected_target", "note"]].fillna("")
+    new_prop = merged["proposed"].fillna("").astype(str)
+    stale = (merged["decision"] != "") & merged["_old_prop"].notna() & (merged["_old_prop"] != new_prop)
+    merged.loc[stale, "note"] = (merged.loc[stale, "note"] + " [proposal changed from "
+                                 + merged.loc[stale, "_old_prop"] + "; decision cleared]").str.strip()
+    merged.loc[stale, ["decision", "corrected_target"]] = ""
+    in_new = set(zip(merged["year"], merged["module"], merged["name"]))
+    gone = o[(o["decision"] != "") & [k not in in_new for k in zip(o["year"], o["module"], o["name"])]]
+    out = pd.concat([merged.drop(columns="_old_prop"), gone], ignore_index=True)
+    return out[COLUMNS + extra].fillna("")

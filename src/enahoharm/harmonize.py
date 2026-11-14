@@ -20,13 +20,34 @@ PERSON_MODULES = ["02", "03", "05"]
 
 
 # ---------------------------------------------------------------------------------------------- mapping
-def final_mapping(mapped: pd.DataFrame, reviewed: pd.DataFrame) -> pd.DataFrame:
+DECISIONS = {"", "accept", "correct", "reject"}
+
+
+def _check_decisions(r: pd.DataFrame, allowed: set[str] | None) -> None:
+    bad = sorted(set(r["decision"]) - DECISIONS)
+    if bad:
+        raise ValueError(f"unknown review decision(s) {bad}; use accept, correct or reject")
+    cor = r[r["decision"] == "correct"]
+    empty = cor[cor["corrected_target"] == ""]
+    if len(empty):
+        raise ValueError(f"decision 'correct' without corrected_target for: {', '.join(empty['name'])}")
+    if allowed is not None:
+        unknown = sorted(set(cor["corrected_target"]) - set(allowed))
+        if unknown:
+            raise ValueError(f"corrected_target not in the schema: {unknown}")
+
+
+def final_mapping(mapped: pd.DataFrame, reviewed: pd.DataFrame, allowed: set[str] | None = None) -> pd.DataFrame:
     """LLM proposals overridden by human decisions; rejected rows and "none" are dropped.
 
-    provenance: llm (not reviewed), human_accepted, human_corrected.
+    provenance: llm (not reviewed), human_accepted, human_corrected. Decisions are trimmed and lower-cased;
+    an unknown decision, a 'correct' without target, or a target outside `allowed` raises ValueError.
     """
     m = _norm(mapped)
-    r = _norm(reviewed)[KEYS + ["decision", "corrected_target"]].fillna("")
+    r = _norm(reviewed)[KEYS + ["decision", "corrected_target"]].fillna("").astype({"decision": str})
+    r["decision"] = r["decision"].str.strip().str.lower()
+    r["corrected_target"] = r["corrected_target"].astype(str).str.strip()
+    _check_decisions(r, allowed)
     j = m.merge(r, on=KEYS, how="left").fillna({"decision": "", "corrected_target": ""})
     valid = (j["status"] == "ok") & j["proposed"].notna() & (j["proposed"] != "none")
     j["target"] = np.where(valid, j["proposed"], None)
@@ -40,6 +61,28 @@ def final_mapping(mapped: pd.DataFrame, reviewed: pd.DataFrame) -> pd.DataFrame:
     j.loc[j["decision"] == "reject", "target"] = None
     out = j[j["target"].notna()]
     return out[KEYS + ["target", "provenance"]].reset_index(drop=True)
+
+
+# Targets every year needs for the indicators, by module.
+REQUIRED = {
+    "34": ["household_weight", "household_size", "household_expenditure", "poverty_line", "extreme_poverty_line",
+           "poverty_status", "strata"],
+    "02": ["age"],
+    "05": ["employment_weight", "labour_force_status"],
+}
+
+
+def check_required(final: pd.DataFrame, years=None) -> None:
+    """Stop early, with an actionable message, if a target the indicators need was not mapped."""
+    f = _norm(final)
+    missing = []
+    for year in years or config.YEARS:
+        for module, names in REQUIRED.items():
+            have = set(f.loc[(f["year"] == year) & (f["module"] == module), "target"])
+            missing += [f"{t} (year {year}, module {module})" for t in names if t not in have]
+    if missing:
+        raise ValueError("targets not mapped: " + "; ".join(missing)
+                         + ". Resolve them in validation/review_queue.csv (decision 'correct').")
 
 
 # ---------------------------------------------------------------------------------------------- derived

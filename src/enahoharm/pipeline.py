@@ -77,6 +77,9 @@ def stage_evaluate():
     q = review.queue(mapped, truth, d)
     path = config.VALIDATION / "review_queue.csv"
     if path.exists():
+        import shutil
+
+        shutil.copyfile(path, path.with_suffix(".csv.bak"))  # human work: keep the previous version
         q = review.keep_decisions(q, pd.read_csv(path, dtype={"module": str}, keep_default_na=False))
     q.to_csv(path, index=False, encoding="utf-8")
     print(json.dumps({k: v for k, v in m.items() if k != "calibration"}, indent=1))
@@ -91,9 +94,13 @@ def stage_harmonize():
     mapped = pd.read_csv(config.INTERIM / "llm_mappings.csv", dtype={"module": str}, keep_default_na=False,
                          na_values={"confidence": [""]})
     reviewed = pd.read_csv(config.VALIDATION / "review_queue.csv", dtype={"module": str}, keep_default_na=False)
-    final = harmonize.final_mapping(mapped, reviewed)
+    targets = schema.load(config.SCHEMA)
+    allowed = {t.name for t in targets if t.kind == "direct"} | {"none"}
+    final = harmonize.final_mapping(mapped, reviewed, allowed=allowed)
+    harmonize.check_required(final)
+    config.REPORTS.mkdir(exist_ok=True)
     final.to_csv(config.REPORTS / "final_mapping.csv", index=False, encoding="utf-8")
-    paths = harmonize.build(final, targets=schema.load(config.SCHEMA))
+    paths = harmonize.build(final, targets=targets)
     for unit, p in paths.items():
         df = pd.read_parquet(p)
         print(unit, df.groupby("year").size().to_dict())
@@ -131,7 +138,8 @@ def stage_report():
     poverty = pd.read_csv(config.REPORTS / "poverty.csv")
     review = pd.read_csv(config.VALIDATION / "review_queue.csv", dtype={"module": str}, keep_default_na=False)
     report.figures(metrics, poverty, review, config.REPORTS / "figures")
-    report.update_readme(config.ROOT / "README.md", metrics, bench, review)
+    gt = pd.read_csv(config.VALIDATION / "ground_truth.csv", keep_default_na=False)
+    report.update_readme(config.ROOT / "README.md", metrics, bench, review, ground_truth=gt)
     print("README results block and figures updated")
 
 

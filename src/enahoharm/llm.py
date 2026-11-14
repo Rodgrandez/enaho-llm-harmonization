@@ -82,10 +82,13 @@ def _parse(text: str, batch: pd.DataFrame, allowed: set[str]) -> pd.DataFrame:
     except (json.JSONDecodeError, KeyError, TypeError):
         items = []
     for it in items if isinstance(items, list) else []:
-        if not isinstance(it, dict) or it.get("name") not in rows:
+        if not isinstance(it, dict) or not isinstance(it.get("name"), str) or it["name"] not in rows:
             continue
         target, conf = it.get("target"), it.get("confidence")
-        ok = target in allowed and isinstance(conf, (int, float)) and 0 <= conf <= 1
+        ok = (isinstance(target, str) and target in allowed and isinstance(conf, (int, float))
+              and not isinstance(conf, bool) and 0 <= conf <= 1)
+        if not isinstance(target, str):
+            target = None
         rows[it["name"]] = {"proposed": target, "confidence": conf,
                             "justification": str(it.get("justification", "")), "status": "ok" if ok else "invalid"}
     out = batch[["year", "module", "name"]].copy()
@@ -123,7 +126,13 @@ def map_variables(dictionary: pd.DataFrame, targets: list[Target], cache_dir: Pa
             record = json.loads(path.read_text(encoding="utf-8"))
         else:
             record = _call(client, model, system, user, schema)
-            path.write_text(json.dumps(record, ensure_ascii=False, indent=1), encoding="utf-8")
+            if record["stop_reason"] != "end_turn":
+                # never cache a truncated or refused answer: it would be reused forever
+                raise LLMError(f"LLM answer for batch {batch['year'].iloc[0]}/{batch['module'].iloc[0]} "
+                               f"stopped with {record['stop_reason']}; not cached")
+            tmp = path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(record, ensure_ascii=False, indent=1), encoding="utf-8")
+            tmp.replace(path)  # atomic: an interrupted run never leaves a corrupt cache file
             spent += cost_usd(record["usage"])
             log.info("LLM batch %s/%s (%d vars): spent so far USD %.4f", batch["year"].iloc[0],
                      batch["module"].iloc[0], len(batch), spent)

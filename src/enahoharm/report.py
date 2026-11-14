@@ -26,7 +26,13 @@ def _review_summary(review: pd.DataFrame) -> dict:
     }
 
 
-def results_markdown(metrics: dict, benchmark: pd.DataFrame, review: pd.DataFrame) -> str:
+def _signoff(gt: pd.DataFrame) -> str:
+    signed = int((gt["reviewed_by"].fillna("").astype(str).str.strip() != "").sum())
+    return f"**Ground truth:** {signed} of {len(gt)} manual ground-truth rows signed off by a human reviewer."
+
+
+def results_markdown(metrics: dict, benchmark: pd.DataFrame, review: pd.DataFrame,
+                     ground_truth: pd.DataFrame | None = None) -> str:
     r = _review_summary(review)
     lines = []
     if r["decided"] == 0:
@@ -51,6 +57,7 @@ def results_markdown(metrics: dict, benchmark: pd.DataFrame, review: pd.DataFram
         (f"**Human review:** {r['queued']} variables routed to review, {r['decided']} decided, "
          f"{r['changed']} changed by the reviewer (corrected or rejected)."),
         "",
+        *([_signoff(ground_truth), ""] if ground_truth is not None else []),
         "**Poverty benchmark against INEI** (population-weighted, % of population; tolerance ±0.5 pp)",
         "",
         "| Year | Measure | This pipeline | INEI | Difference (pp) | Within tolerance |",
@@ -62,9 +69,11 @@ def results_markdown(metrics: dict, benchmark: pd.DataFrame, review: pd.DataFram
     return "\n".join(lines)
 
 
-def update_readme(readme: Path, metrics: dict, benchmark: pd.DataFrame, review: pd.DataFrame) -> None:
+def update_readme(readme: Path, metrics: dict, benchmark: pd.DataFrame, review: pd.DataFrame,
+                  ground_truth: pd.DataFrame | None = None) -> None:
     text = Path(readme).read_text(encoding="utf-8")
-    block = f"{START}\n{results_markdown(metrics, benchmark, review)}\n{END}"
+    body = results_markdown(metrics, benchmark, review, ground_truth)
+    block = f"{START}\n{body}\n{END}"
     new = re.sub(re.escape(START) + r".*?" + re.escape(END), lambda _: block, text, count=1, flags=re.DOTALL)
     Path(readme).write_text(new, encoding="utf-8")
 

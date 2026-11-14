@@ -70,3 +70,22 @@ def test_regenerated_queue_keeps_human_decisions():
     row = merged[merged["name"] == old.loc[0, "name"]].iloc[0]
     assert row["decision"] == "correct" and row["corrected_target"] == "cluster_id"
     assert len(merged) == len(new)
+
+
+def test_keep_decisions_when_queue_changes():
+    new = review.queue(*_frames(), dictionary=_frames()[0][["year", "module", "name"]].assign(label="l"))
+    old = new.copy()
+    old["note"] = ""
+    # decided row that no longer appears in the new queue
+    gone = old.iloc[[0]].copy()
+    gone[["name", "decision"]] = ["zz", "reject"]
+    old = pd.concat([old, gone], ignore_index=True)
+    # decided row whose proposal changed since the decision
+    first = old.index[old["name"] == new.iloc[0]["name"]][0]
+    old.loc[first, ["decision", "proposed", "note"]] = ["accept", "something_else", "checked label"]
+    merged = review.keep_decisions(new, old)
+    assert "zz" in set(merged["name"])  # decided rows are never dropped
+    row = merged[merged["name"] == new.iloc[0]["name"]].iloc[0]
+    assert row["decision"] == ""  # stale decision cleared ...
+    assert "proposal changed" in row["note"]  # ... and flagged
+    assert "note" in merged.columns

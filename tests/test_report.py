@@ -44,3 +44,12 @@ def test_figures_written(tmp_path):
     paths = report.figures(METRICS, POVERTY, _review(["correct", "accept", ""]), tmp_path)
     assert {p.name for p in paths} == {"llm_calibration.png", "poverty_area.png", "review_outcomes.png"}
     assert all(p.stat().st_size > 0 for p in paths)
+
+
+def test_ground_truth_signoff_reported(tmp_path):
+    readme = tmp_path / "README.md"
+    readme.write_text("<!-- RESULTS:START -->\n<!-- RESULTS:END -->\n", encoding="utf-8")
+    gt = pd.DataFrame({"reviewed_by": ["Rodrigo Grandez", "", "Rodrigo Grandez"]})
+    report.update_readme(readme, METRICS, BENCH, _review(["", "", ""]), ground_truth=gt)
+    text = readme.read_text(encoding="utf-8")
+    assert "2 of 3 manual ground-truth rows signed off" in text
