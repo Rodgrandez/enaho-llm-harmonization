@@ -83,8 +83,26 @@ def stage_evaluate():
     print(q["reason"].value_counts().to_string())
 
 
+def stage_harmonize():
+    import pandas as pd
+
+    from . import config, harmonize, schema
+
+    mapped = pd.read_csv(config.INTERIM / "llm_mappings.csv", dtype={"module": str}, keep_default_na=False,
+                         na_values={"confidence": [""]})
+    reviewed = pd.read_csv(config.VALIDATION / "review_queue.csv", dtype={"module": str}, keep_default_na=False)
+    final = harmonize.final_mapping(mapped, reviewed)
+    final.to_csv(config.REPORTS / "final_mapping.csv", index=False, encoding="utf-8")
+    paths = harmonize.build(final, targets=schema.load(config.SCHEMA))
+    for unit, p in paths.items():
+        df = pd.read_parquet(p)
+        print(unit, df.groupby("year").size().to_dict())
+    print(final["provenance"].value_counts().to_string())
+
+
 STAGES = {
     "fetch": stage_fetch,
+    "harmonize": stage_harmonize,
     "evaluate": stage_evaluate,
     "dictionary": stage_dictionary,
     "draft_ground_truth": stage_draft_ground_truth,
