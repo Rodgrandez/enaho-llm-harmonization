@@ -1,5 +1,6 @@
 """Command-line entry point: python -m enahoharm.pipeline <stage>."""
 import argparse
+import logging
 
 
 def stage_fetch():
@@ -31,13 +32,40 @@ def stage_draft_ground_truth():
     print(m["reason"].value_counts().to_string())
 
 
-STAGES = {"fetch": stage_fetch, "dictionary": stage_dictionary, "draft_ground_truth": stage_draft_ground_truth}
+def _load_dictionary():
+    import pandas as pd
+
+    from . import config
+
+    d = pd.read_csv(config.INTERIM / "dictionary.csv", dtype={"module": str}, keep_default_na=False)
+    d["module"] = d["module"].str.zfill(2)
+    return d
+
+
+def stage_llm():
+    """Map every variable with the LLM; with no API key it runs from the committed cache only."""
+    from . import config, llm, schema
+
+    out = llm.map_variables(_load_dictionary(), schema.load(config.SCHEMA), config.CACHE)
+    out.to_csv(config.INTERIM / "llm_mappings.csv", index=False, encoding="utf-8")
+    usage = llm.cache_usage(config.CACHE)
+    print(f"{len(out)} variables mapped, {(out.status == 'invalid').sum()} invalid; "
+          f"{usage['calls']} calls, USD {usage['cost_usd']:.4f}")
+
+
+STAGES = {
+    "fetch": stage_fetch,
+    "dictionary": stage_dictionary,
+    "draft_ground_truth": stage_draft_ground_truth,
+    "llm": stage_llm,
+}
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="enahoharm.pipeline")
     parser.add_argument("stage", choices=sorted(STAGES))
     args = parser.parse_args(argv)
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     STAGES[args.stage]()
 
 
