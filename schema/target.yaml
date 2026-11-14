@@ -1,0 +1,136 @@
+# Target schema for harmonizing ENAHO 2019 and 2024.
+# direct  = the LLM maps source variables to it; source_names is the hand-written ground truth.
+# derived = computed in src/enahoharm/harmonize.py from direct targets (never asked to the LLM).
+# Drafted by an AI assistant from the INEI dictionaries; reviewed by Rodrigo Grandez (see validation/).
+
+targets:
+  # --- Identifiers and survey design ---------------------------------------------------------
+  - {name: survey_year, unit: household, kind: direct, module: "02", source_names: [año],
+     description: "Survey year", values: "integer year"}
+  - {name: cluster_id, unit: household, kind: direct, module: "02", source_names: [conglome],
+     description: "Primary sampling unit (conglomerado) identifier", values: "string id"}
+  - {name: dwelling_id, unit: household, kind: direct, module: "02", source_names: [vivienda],
+     description: "Dwelling identifier within the cluster", values: "string id"}
+  - {name: household_id, unit: household, kind: direct, module: "02", source_names: [hogar],
+     description: "Household sequence number within the dwelling", values: "string id"}
+  - {name: person_id, unit: person, kind: direct, module: "02", source_names: [codperso],
+     description: "Person line number within the household", values: "string id"}
+  - {name: geo_code, unit: household, kind: direct, module: "02", source_names: [ubigeo],
+     description: "Geographic code (department-province-district, INEI ubigeo)", values: "6-digit string"}
+  - {name: geo_domain, unit: household, kind: direct, module: "02", source_names: [dominio],
+     description: "Geographic domain (coast north/centre/south, highlands, jungle, Lima Metropolitana)", values: "codes 1-8"}
+  - {name: strata, unit: household, kind: direct, module: "02", source_names: [estrato],
+     description: "Geographic stratum by population size of the locality", values: "codes 1-8; 1-5 urban, 6-8 rural"}
+  - {name: household_weight, unit: household, kind: direct, module: "34", source_names: [factor07],
+     description: "Annual household expansion factor", values: "positive float"}
+  - {name: person_weight, unit: person, kind: direct, module: "02", source_names: [facpob07],
+     description: "Annual population expansion factor for person-level estimates", values: "positive float"}
+  - {name: employment_weight, unit: person, kind: direct, module: "05", source_names: [fac500a],
+     description: "Expansion factor for employment and labour income estimates", values: "positive float"}
+
+  # --- Demography (module 02) ------------------------------------------------------------------
+  - {name: relationship_to_head, unit: person, kind: direct, module: "02", source_names: [p203],
+     description: "Relationship to the household head", values: "1 head, 2 spouse, 3 child, ..."}
+  - {name: household_member, unit: person, kind: direct, module: "02", source_names: [p204],
+     description: "Whether the person is a member of the household", values: "1 yes, 2 no"}
+  - {name: sex, unit: person, kind: direct, module: "02", source_names: [p207],
+     description: "Sex of the person", values: "1 male, 2 female"}
+  - {name: age, unit: person, kind: direct, module: "02", source_names: [p208a],
+     description: "Age in completed years", values: "integer 0-98"}
+  - {name: marital_status, unit: person, kind: direct, module: "02", source_names: [p209],
+     description: "Marital or union status", values: "1 cohabiting, 2 married, 3 widowed, 4 divorced, 5 separated, 6 single"}
+
+  # --- Education (module 03) -------------------------------------------------------------------
+  - {name: education_level, unit: person, kind: direct, module: "03", source_names: [p301a],
+     description: "Highest educational level attained", values: "codes 1-12 (no level ... postgraduate)"}
+  - {name: last_year_completed, unit: person, kind: direct, module: "03", source_names: [p301b],
+     description: "Last year of study completed within the attained level", values: "integer"}
+  - {name: last_grade_completed, unit: person, kind: direct, module: "03", source_names: [p301c],
+     description: "Last grade completed (primary school grade) within the attained level", values: "integer"}
+  - {name: school_type, unit: person, kind: direct, module: "03", source_names: [p301d],
+     description: "Whether the last institution attended was public or private", values: "1 public, 2 private"}
+  - {name: literate, unit: person, kind: direct, module: "03", source_names: [p302],
+     description: "Can read and write", values: "1 yes, 2 no"}
+  - {name: enrolled, unit: person, kind: direct, module: "03", source_names: [p306],
+     description: "Enrolled in an educational institution this year", values: "1 yes, 2 no"}
+  - {name: attending, unit: person, kind: direct, module: "03", source_names: [p307],
+     description: "Currently attending an educational institution", values: "1 yes, 2 no"}
+  - {name: enrolled_level, unit: person, kind: direct, module: "03", source_names: [p308a],
+     description: "Level in which the person is currently enrolled", values: "1 pre-school, 2 primary, 3 secondary, ..."}
+
+  # --- Employment (module 05) ------------------------------------------------------------------
+  - {name: labour_force_status, unit: person, kind: direct, module: "05", source_names: [ocu500],
+     description: "Labour force status (employed, open/hidden unemployed, inactive)", values: "1 employed, 2 open unemployed, 3 hidden unemployed, 4 inactive"}
+  - {name: occupation_code, unit: person, kind: direct, module: "05", source_names: [p505r4],
+     description: "Occupation of the main job, current national classification (CNO-2015, based on ISCO-08)", values: "3-4 digit code"}
+  - {name: occupation_code_old, unit: person, kind: direct, module: "05", source_names: [p505],
+     description: "Occupation of the main job, older national classification (based on ISCO-88)", values: "3-4 digit code"}
+  - {name: industry_code, unit: person, kind: direct, module: "05", source_names: [p506r4],
+     description: "Industry of the main job, ISIC revision 4", values: "4-digit code"}
+  - {name: industry_code_old, unit: person, kind: direct, module: "05", source_names: [p506],
+     description: "Industry of the main job, ISIC revision 3", values: "4-digit code"}
+  - {name: employment_category, unit: person, kind: direct, module: "05", source_names: [p507],
+     description: "Status in employment in the main job (employer, own-account, employee, worker, unpaid family worker, domestic)", values: "codes 1-7"}
+  - {name: hours_main_job, unit: person, kind: direct, module: "05", source_names: [p513t],
+     description: "Hours worked last week in the main job (reported)", values: "hours"}
+  - {name: hours_main_job_imputed, unit: person, kind: direct, module: "05", source_names: [i513t],
+     description: "Hours worked last week in the main job (imputed by INEI)", values: "hours"}
+  - {name: hours_usual_all_jobs, unit: person, kind: direct, module: "05", source_names: [p520],
+     description: "Hours usually worked per week in all jobs", values: "hours"}
+  - {name: informal_status, unit: person, kind: direct, module: "05", source_names: [ocupinf],
+     description: "Informal employment status in the main job (INEI definition)", values: "1 informal, 2 formal"}
+  - {name: informal_sector_employment, unit: person, kind: direct, module: "05", source_names: [emplpsec],
+     description: "Informal employment inside or outside the informal sector (main job)", values: "codes 1-3"}
+  - {name: income_dependent_main, unit: person, kind: direct, module: "05", source_names: [i524a1],
+     description: "Annual monetary income of employees in the main job (imputed by INEI)", values: "soles per year"}
+  - {name: income_independent_main, unit: person, kind: direct, module: "05", source_names: [i530a],
+     description: "Annual net earnings of independent workers in the main job (imputed by INEI)", values: "soles per year"}
+  - {name: income_dependent_secondary, unit: person, kind: direct, module: "05", source_names: [i538a1],
+     description: "Annual monetary income of employees in secondary jobs (imputed by INEI)", values: "soles per year"}
+  - {name: income_independent_secondary, unit: person, kind: direct, module: "05", source_names: [i541a],
+     description: "Annual net earnings of independent workers in secondary jobs (imputed by INEI)", values: "soles per year"}
+  - {name: inkind_income_main, unit: person, kind: direct, module: "05", source_names: [d529t],
+     description: "Annual value of in-kind payments in the main job", values: "soles per year"}
+  - {name: self_consumption_main, unit: person, kind: direct, module: "05", source_names: [d536],
+     description: "Annual value of own production consumed by independent workers, main job", values: "soles per year"}
+  - {name: inkind_income_secondary, unit: person, kind: direct, module: "05", source_names: [d540t],
+     description: "Annual value of in-kind payments in secondary jobs", values: "soles per year"}
+  - {name: self_consumption_secondary, unit: person, kind: direct, module: "05", source_names: [d543],
+     description: "Annual value of own production consumed by independent workers, secondary jobs", values: "soles per year"}
+  - {name: extraordinary_labour_income, unit: person, kind: direct, module: "05", source_names: [d544t],
+     description: "Extraordinary labour income received in the last 12 months (bonuses, gratuities, CTS)", values: "soles per year"}
+
+  # --- Household and poverty (module 34, sumaria) ---------------------------------------------
+  - {name: household_size, unit: household, kind: direct, module: "34", source_names: [mieperho],
+     description: "Number of household members (excludes domestic workers and boarders)", values: "integer"}
+  - {name: persons_in_household, unit: household, kind: direct, module: "34", source_names: [totmieho],
+     description: "Total persons in the household, including non-members", values: "integer"}
+  - {name: household_expenditure, unit: household, kind: direct, module: "34", source_names: [gashog2d],
+     description: "Total annual household expenditure used for monetary poverty (gross, deflated)", values: "soles per year"}
+  - {name: household_income_net, unit: household, kind: direct, module: "34", source_names: [inghog2d],
+     description: "Total annual net household income", values: "soles per year"}
+  - {name: household_income_gross, unit: household, kind: direct, module: "34", source_names: [inghog1d],
+     description: "Total annual gross household income", values: "soles per year"}
+  - {name: poverty_line, unit: household, kind: direct, module: "34", source_names: [linea],
+     description: "Total (monetary) poverty line, per capita per month", values: "soles per person per month"}
+  - {name: extreme_poverty_line, unit: household, kind: direct, module: "34", source_names: [linpe],
+     description: "Extreme (food) poverty line, per capita per month", values: "soles per person per month"}
+  - {name: poverty_status, unit: household, kind: direct, module: "34", source_names: [pobreza],
+     description: "Official INEI monetary poverty status of the household", values: "1 extreme poor, 2 non-extreme poor, 3 non-poor"}
+
+  # --- Derived (coded by hand, formulas in harmonize.py) --------------------------------------
+  - {name: area, unit: household, kind: derived, inputs: [strata],
+     description: "Urban if strata 1-5, rural if 6-8 (INEI convention)", values: "urban, rural"}
+  - {name: years_schooling, unit: person, kind: derived, inputs: [education_level, last_year_completed, last_grade_completed],
+     description: "Years of schooling implied by the attained level and last year or grade completed", values: "0-18"}
+  - {name: employed, unit: person, kind: derived, inputs: [labour_force_status],
+     description: "True if labour_force_status == 1", values: "bool"}
+  - {name: informal, unit: person, kind: derived, inputs: [informal_status],
+     description: "True if informal_status == 1; missing when the year has no informality variable", values: "bool"}
+  - {name: labour_income, unit: person, kind: derived,
+     inputs: [income_dependent_main, income_independent_main, income_dependent_secondary, income_independent_secondary],
+     description: "Annual monetary labour income: sum of the four imputed income components (missing = 0)", values: "soles per year"}
+  - {name: poor, unit: household, kind: derived, inputs: [household_expenditure, household_size, poverty_line],
+     description: "household_expenditure / household_size / 12 < poverty_line", values: "bool"}
+  - {name: extreme_poor, unit: household, kind: derived, inputs: [household_expenditure, household_size, extreme_poverty_line],
+     description: "household_expenditure / household_size / 12 < extreme_poverty_line", values: "bool"}
