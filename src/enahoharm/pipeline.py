@@ -100,8 +100,28 @@ def stage_harmonize():
     print(final["provenance"].value_counts().to_string())
 
 
+def stage_indicators():
+    import pandas as pd
+
+    from . import config, indicators
+
+    hh = pd.read_parquet(config.PROCESSED / "household.parquet")
+    person = pd.read_parquet(config.PROCESSED / "person.parquet")
+    pov = pd.concat([indicators.poverty(hh).assign(area="national"), indicators.poverty(hh, by="area")])
+    lab = pd.concat([indicators.labour(person).assign(area="national"), indicators.labour(person, by="area")])
+    bench = indicators.benchmark(indicators.poverty(hh), config.INEI_OFFICIAL, tol=config.BENCHMARK_TOLERANCE_PP)
+    config.REPORTS.mkdir(exist_ok=True)
+    pov.round(2).to_csv(config.REPORTS / "poverty.csv", index=False)
+    lab.round(2).to_csv(config.REPORTS / "labour.csv", index=False)
+    bench.to_csv(config.REPORTS / "benchmark.csv", index=False)
+    print(bench.to_string(index=False))
+    if not bench["within_tol"].all():
+        raise SystemExit("poverty benchmark outside tolerance: see reports/benchmark.csv")
+
+
 STAGES = {
     "fetch": stage_fetch,
+    "indicators": stage_indicators,
     "harmonize": stage_harmonize,
     "evaluate": stage_evaluate,
     "dictionary": stage_dictionary,

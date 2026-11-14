@@ -17,3 +17,11 @@ YEARS = {2019: 687, 2024: 966}
 MODULES = ["02", "03", "05", "34"]
 
 BASE_URL = "https://proyectos.inei.gob.pe/iinei/srienaho/descarga/STATA"
+
+# INEI official national monetary poverty rates, % of population (Informe Tecnico "Evolucion de la Pobreza
+# Monetaria"; 2019 report published 2020, 2024 report published May 2025).
+INEI_OFFICIAL = {
+    2019: {"poverty": 20.2, "extreme_poverty": 2.9},
+    2024: {"poverty": 27.6, "extreme_poverty": 5.5},
+}
+BENCHMARK_TOLERANCE_PP = 0.5
