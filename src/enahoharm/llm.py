@@ -35,7 +35,7 @@ class LLMError(Exception):
 
 
 def cache_key(model: str, prompt: str) -> str:
-    return hashlib.sha256(f"{model}\n{prompt}".encode("utf-8")).hexdigest()
+    return hashlib.sha256(f"{model}\n{prompt}".encode()).hexdigest()
 
 
 def cost_usd(usage: dict) -> float:
