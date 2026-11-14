@@ -53,8 +53,39 @@ def stage_llm():
           f"{usage['calls']} calls, USD {usage['cost_usd']:.4f}")
 
 
+def _load_truth(dictionary):
+    from . import config, schema
+
+    manual = schema.load_manual(config.VALIDATION / "ground_truth.csv")
+    return schema.ground_truth(dictionary, schema.load(config.SCHEMA), manual)
+
+
+def stage_evaluate():
+    import json
+
+    import pandas as pd
+
+    from . import config, evaluate, llm, review
+
+    d = _load_dictionary()
+    mapped = pd.read_csv(config.INTERIM / "llm_mappings.csv", dtype={"module": str}, keep_default_na=False,
+                         na_values={"confidence": [""]})
+    truth = _load_truth(d)
+    m = evaluate.metrics(mapped, truth, usage=llm.cache_usage(config.CACHE))
+    config.REPORTS.mkdir(exist_ok=True)
+    (config.REPORTS / "llm_metrics.json").write_text(json.dumps(m, indent=2), encoding="utf-8")
+    q = review.queue(mapped, truth, d)
+    path = config.VALIDATION / "review_queue.csv"
+    if path.exists():
+        q = review.keep_decisions(q, pd.read_csv(path, dtype={"module": str}, keep_default_na=False))
+    q.to_csv(path, index=False, encoding="utf-8")
+    print(json.dumps({k: v for k, v in m.items() if k != "calibration"}, indent=1))
+    print(q["reason"].value_counts().to_string())
+
+
 STAGES = {
     "fetch": stage_fetch,
+    "evaluate": stage_evaluate,
     "dictionary": stage_dictionary,
     "draft_ground_truth": stage_draft_ground_truth,
     "llm": stage_llm,
