@@ -119,7 +119,32 @@ def stage_indicators():
         raise SystemExit("poverty benchmark outside tolerance: see reports/benchmark.csv")
 
 
+def stage_report():
+    import json
+
+    import pandas as pd
+
+    from . import config, report
+
+    metrics = json.loads((config.REPORTS / "llm_metrics.json").read_text(encoding="utf-8"))
+    bench = pd.read_csv(config.REPORTS / "benchmark.csv")
+    poverty = pd.read_csv(config.REPORTS / "poverty.csv")
+    review = pd.read_csv(config.VALIDATION / "review_queue.csv", dtype={"module": str}, keep_default_na=False)
+    report.figures(metrics, poverty, review, config.REPORTS / "figures")
+    report.update_readme(config.ROOT / "README.md", metrics, bench, review)
+    print("README results block and figures updated")
+
+
+def stage_all():
+    # The LLM stage runs from the committed cache; it only calls the API (and needs a key) on a cache miss.
+    for name in ["fetch", "dictionary", "llm", "evaluate", "harmonize", "indicators", "report"]:
+        print(f"== {name}")
+        STAGES[name]()
+
+
 STAGES = {
+    "all": stage_all,
+    "report": stage_report,
     "fetch": stage_fetch,
     "indicators": stage_indicators,
     "harmonize": stage_harmonize,
