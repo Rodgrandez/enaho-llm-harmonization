@@ -1,0 +1,11 @@
+{
+ "model": "claude-haiku-5-5",
+ "text": "{\"mappings\":[{\"name\":\"pobrezav\",\"target\":\"poverty_status\",\"confidence\":0.75,\"justification\":\"Official poverty status (extreme poor, non-extreme poor, non-poor), but codes 3 and 4 here split non-poor into vulnerable and non-vulnerable, so recoding to the target's 3 = non-poor is needed.\"},{\"name\":\"nconglome\",\"target\":\"cluster_id\",\"confidence\":0.95,\"justification\":\"Conglomerado number from the sampling frame is the primary sampling unit identifier.\"},{\"name\":\"sub_conglome\",\"target\":\"none\",\"confidence\":0.8,\"justification\":\"Subconglomerado is a finer sampling subunit within the cluster, not the primary sampling unit identifier itself.\"}]}",
+ "usage": {
+  "input_tokens": 144,
+  "output_tokens": 548,
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 3024
+ },
+ "stop_reason": "end_turn"
+}

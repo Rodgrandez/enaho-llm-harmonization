@@ -1,0 +1,35 @@
+{
+  "n_variables": 4151,
+  "n_mapped_truth": 172,
+  "n_invalid": 0,
+  "recall_mapped": 0.9826,
+  "accuracy_mapped": 0.9826,
+  "precision_mapped": 0.7545,
+  "accuracy_none": 0.9862,
+  "accuracy_all": 0.986,
+  "calibration": [
+    {
+      "bucket": "[0,0.5)",
+      "n": 97,
+      "accuracy": 0.9175
+    },
+    {
+      "bucket": "[0.5,0.8)",
+      "n": 209,
+      "accuracy": 0.8565
+    },
+    {
+      "bucket": "[0.8,0.95)",
+      "n": 979,
+      "accuracy": 0.9826
+    },
+    {
+      "bucket": "[0.95,1]",
+      "n": 2866,
+      "accuracy": 0.999
+    }
+  ],
+  "input_tokens": 239781,
+  "output_tokens": 276080,
+  "cost_usd": 0.1656
+}
