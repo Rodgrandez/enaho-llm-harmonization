@@ -1,0 +1,5 @@
+year,measure,ours,inei,diff,within_tol
+2019,poverty,20.19,20.2,-0.01,True
+2019,extreme_poverty,2.85,2.9,-0.05,True
+2024,poverty,27.58,27.6,-0.02,True
+2024,extreme_poverty,5.5,5.5,0.0,True

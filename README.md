@@ -16,6 +16,32 @@ claim of professional experience with household surveys.
 ## Results
 
 <!-- RESULTS:START -->
+**LLM mapping** (Claude Haiku 5.5, every variable of modules 02, 03, 05 and 34 in both years)
+
+| Metric | Value |
+|---|---|
+| Source variables mapped | 4,151 |
+| Variables that belong to the schema (ground truth) | 172 |
+| Accuracy on those variables (right target) | 98.3% |
+| Recall (recognised as mappable) | 98.3% |
+| Precision of the mapped calls | 75.4% |
+| Accuracy on out-of-schema variables (`none`) | 98.6% |
+| Invalid answers | 0 |
+| Tokens (input / output) | 239,781 / 276,080 |
+| Cost | USD 0.17 |
+
+**Human review:** 326 variables routed to review, 326 decided, 54 changed by the reviewer (corrected or rejected).
+
+**Ground truth:** 45 of 46 manual ground-truth rows signed off by a human reviewer.
+
+**Poverty benchmark against INEI** (population-weighted, % of population; tolerance ±0.5 pp)
+
+| Year | Measure | This pipeline | INEI | Difference (pp) | Within tolerance |
+|---|---|---|---|---|---|
+| 2019 | poverty | 20.19 | 20.2 | -0.01 | yes |
+| 2019 | extreme_poverty | 2.85 | 2.9 | -0.05 | yes |
+| 2024 | poverty | 27.58 | 27.6 | -0.02 | yes |
+| 2024 | extreme_poverty | 5.50 | 5.5 | +0.00 | yes |
 <!-- RESULTS:END -->
 
 ![LLM accuracy by confidence](reports/figures/llm_calibration.png)
